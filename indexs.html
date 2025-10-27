@@ -1,97 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Decentralized Resume Verification</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
   <style>
     body {
-      font-family: "Poppins", sans-serif;
-      background: #e5f0ff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      font-family: Arial, sans-serif;
+      background-color: #f6f8fa;
       margin: 0;
-    }
-    .container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      padding: 30px;
-      width: 380px;
+      padding: 0;
       text-align: center;
     }
-    h2 {
-      color: #1e3a8a;
-      margin-bottom: 20px;
+
+    header {
+      background-color: #0d1117;
+      color: white;
+      padding: 15px 0;
+      font-size: 22px;
     }
-    input[type="file"] {
-      margin: 10px 0;
+
+    .container {
+      width: 90%;
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+
     button {
-      width: 100%;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    input, textarea {
+      width: 95%;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .status.connected { color: green; }
+    .status.error { color: red; }
+    .status.verified { color: blue; }
+
+    .resume-card {
+      background: #f0f0f0;
       padding: 10px;
       margin-top: 10px;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
+      border-radius: 8px;
+      text-align: left;
     }
-    #connectWalletBtn {
-      background-color: #2563eb;
-    }
-    #verifyBtn {
-      background-color: #16a34a;
-    }
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 6px;
-      font-weight: 500;
-    }
-    .connected {
-      background-color: #d1fae5;
-      color: #065f46;
-    }
-    .not-verified {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-    .verified {
-      background-color: #dcfce7;
-      color: #166534;
-    }
-    .error {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-    .small-text {
-      color: #6b7280;
-      font-size: 13px;
-      margin-top: 5px;
-    }
+
   </style>
 </head>
 <body>
+  <header>
+    Decentralized Resume Verification System
+  </header>
+
   <div class="container">
-    <h2>Decentralized Resume Verification</h2>
-
+    <h3>🔗 Connect Wallet</h3>
     <button id="connectWalletBtn">Connect Wallet</button>
-    <div id="walletStatus" class="status small-text">Not connected</div>
+    <p id="walletStatus" class="status">Not Connected</p>
 
-    <form id="uploadForm">
-      <label for="resumeFile">Upload Resume PDF</label><br>
-      <input type="file" id="resumeFile" accept=".pdf" />
-    </form>
+    <hr>
 
-    <div id="verificationStatus" class="status not-verified">
-      ❌ Not Verified
-    </div>
+    <h3>📝 Submit Resume</h3>
+    <input type="text" id="name" placeholder="Name"><br>
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="text" id="qualification" placeholder="Qualification"><br>
+    <input type="text" id="skills" placeholder="Skills (comma separated)"><br>
+    <textarea id="experience" placeholder="Experience"></textarea><br>
+    <button id="submitResumeBtn">Submit Resume</button>
+    <p id="submissionStatus" class="status"></p>
 
-    <button id="verifyBtn">✅ Verify Resume (Admin Only)</button>
+    <hr>
+
+    <h3>📄 View My Resumes</h3>
+    <button id="viewMyResumesBtn">View Resumes</button>
+    <div id="resumeList"></div>
+
+    <hr>
+
+    <h3>✅ Admin Panel</h3>
+    <button id="verifyBtn">Verify Resume</button>
+    <p id="verificationStatus" class="status"></p>
   </div>
 
   <script>
@@ -348,47 +360,114 @@
 
     let provider, signer, contract, userAddress, adminAddress;
 
-    async function connectWallet() {
-      if (!window.ethereum) {
-        alert("MetaMask not detected!");
-        return;
-      }
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = provider.getSigner();
-      userAddress = await signer.getAddress();
-      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-      adminAddress = await contract.admin();
+    document.addEventListener("DOMContentLoaded", () => {
+      const connectButton = document.getElementById("connectWalletBtn");
+      const walletStatus = document.getElementById("walletStatus");
+      const submitButton = document.getElementById("submitResumeBtn");
+      const verifyButton = document.getElementById("verifyBtn");
+      const viewButton = document.getElementById("viewMyResumesBtn");
+      const resumeList = document.getElementById("resumeList");
 
-      document.getElementById("walletStatus").innerText = "✅ Wallet Connected: " + userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
-      document.getElementById("walletStatus").className = "status connected";
+      verifyButton.style.display = "none"; // hide admin button initially
 
-      if (userAddress.toLowerCase() === adminAddress.toLowerCase()) {
-        document.getElementById("verifyBtn").style.display = "block";
-      } else {
-        document.getElementById("verifyBtn").style.display = "none";
-      }
-    }
+      // 🔗 Connect Wallet
+      connectButton.addEventListener("click", async () => {
+        try {
+          if (!window.ethereum) {
+            alert("⚠️ MetaMask not found! Please install MetaMask extension.");
+            window.open("https://metamask.io/download.html");
+            return;
+          }
 
-    async function verifyResume() {
-      try {
-        const resumeId = prompt("Enter Resume ID to verify:");
-        if (!resumeId) return;
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          await provider.send("eth_requestAccounts", []);
+          signer = provider.getSigner();
+          userAddress = await signer.getAddress();
 
-        const tx = await contract.verifyResume(resumeId);
-        await tx.wait();
+          contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+          adminAddress = await contract.admin();
 
-        document.getElementById("verificationStatus").innerText = "✅ Verified Successfully";
-        document.getElementById("verificationStatus").className = "status verified";
-      } catch (err) {
-        console.error(err);
-        document.getElementById("verificationStatus").innerText = "❌ Error verifying resume";
-        document.getElementById("verificationStatus").className = "status error";
-      }
-    }
+          walletStatus.innerText = "✅ Connected: " + userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+          walletStatus.className = "status connected";
 
-    document.getElementById("connectWalletBtn").addEventListener("click", connectWallet);
-    document.getElementById("verifyBtn").addEventListener("click", verifyResume);
+          if (userAddress.toLowerCase() === adminAddress.toLowerCase()) {
+            verifyButton.style.display = "block";
+          }
+        } catch (err) {
+          console.error(err);
+          walletStatus.innerText = "❌ Connection failed";
+          walletStatus.className = "status error";
+        }
+      });
+
+      // 📝 Submit Resume
+      submitButton.addEventListener("click", async () => {
+        try {
+          const name = document.getElementById("name").value;
+          const email = document.getElementById("email").value;
+          const qualification = document.getElementById("qualification").value;
+          const skills = document.getElementById("skills").value.split(",");
+          const experience = document.getElementById("experience").value;
+          const status = document.getElementById("submissionStatus");
+
+          if (!name || !email) {
+            alert("Please fill all required fields");
+            return;
+          }
+
+          const tx = await contract.submitResume(name, email, qualification, skills, experience);
+          await tx.wait();
+
+          status.innerText = "✅ Resume submitted successfully!";
+          status.className = "status connected";
+        } catch (err) {
+          console.error(err);
+          document.getElementById("submissionStatus").innerText = "❌ Submission failed.";
+        }
+      });
+
+      // 📄 View My Resumes
+      viewButton.addEventListener("click", async () => {
+        resumeList.innerHTML = "";
+        try {
+          const ids = await contract.getMyResumeIds();
+          for (let id of ids) {
+            const r = await contract.getResume(id);
+            const card = document.createElement("div");
+            card.className = "resume-card";
+            card.innerHTML = `
+              <strong>ID:</strong> ${id}<br>
+              <strong>Name:</strong> ${r[0]}<br>
+              <strong>Email:</strong> ${r[1]}<br>
+              <strong>Qualification:</strong> ${r[2]}<br>
+              <strong>Skills:</strong> ${r[3].join(", ")}<br>
+              <strong>Experience:</strong> ${r[4]}<br>
+              <strong>Verified:</strong> ${r[5] ? "✅ Yes" : "❌ No"}<br>
+            `;
+            resumeList.appendChild(card);
+          }
+        } catch (err) {
+          console.error(err);
+          resumeList.innerText = "Error fetching resumes.";
+        }
+      });
+
+      // ✅ Verify Resume (Admin only)
+      verifyButton.addEventListener("click", async () => {
+        try {
+          const resumeId = prompt("Enter Resume ID to verify:");
+          if (!resumeId) return;
+          const tx = await contract.verifyResume(resumeId);
+          await tx.wait();
+
+          document.getElementById("verificationStatus").innerText = "✅ Verified Successfully";
+          document.getElementById("verificationStatus").className = "status verified";
+        } catch (err) {
+          console.error(err);
+          document.getElementById("verificationStatus").innerText = "❌ Error verifying resume";
+        }
+      });
+    });
   </script>
 </body>
 </html>
