@@ -4,10 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Decentralized Resume Verification</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@17/umd/react.development.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@17/umd/react-dom.development.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/babel-standalone@6.26.0/babel.min.js"></script>
+
+  <!-- ✅ React + Babel + Ethers (Stable sources) -->
+  <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,13 +24,10 @@
       margin: 40px auto;
       background: white;
       border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       padding: 20px 40px;
     }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
+    h1 { text-align: center; color: #333; }
     button {
       padding: 10px 18px;
       border: none;
@@ -36,11 +36,10 @@
       background: #2563eb;
       color: white;
       font-weight: bold;
+      margin-top: 8px;
     }
-    button:hover {
-      background: #1e40af;
-    }
-    input, textarea {
+    button:hover { background: #1e40af; }
+    input {
       width: 100%;
       padding: 8px;
       margin: 8px 0;
@@ -60,12 +59,8 @@
       font-size: 12px;
       color: white;
     }
-    .verified {
-      background-color: #16a34a;
-    }
-    .pending {
-      background-color: #f59e0b;
-    }
+    .verified { background-color: #16a34a; }
+    .pending { background-color: #f59e0b; }
     .skill-tag {
       display: inline-block;
       background: #e0f2fe;
@@ -80,27 +75,19 @@
       color: #111827;
       margin: 5px;
     }
-    .tabs .active {
-      background: #2563eb;
-      color: white;
-    }
-    .btn-primary {
-      background: #2563eb;
-      color: white;
-    }
-    .btn-success {
-      background: #16a34a;
-      color: white;
-    }
+    .tabs .active { background: #2563eb; color: white; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-success { background: #16a34a; color: white; }
   </style>
 </head>
+
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
 
-    const CONTRACT_ADDRESS = "0x782A76396205A4cf42A1a14c2221a42229eAC21d"; // 🔹 Replace with your actual contract address
-    const CONTRACT_ABI = [
+    const CONTRACT_ADDRESS = "0x782A76396205A4cf42A1a14c2221a42229eAC21d"; // 🔹 Replace with your actual deployed contract address
+    const CONTRACT_ABI =[
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
@@ -500,49 +487,66 @@
       const [account, setAccount] = React.useState(null);
       const [contract, setContract] = React.useState(null);
       const [resumes, setResumes] = React.useState([]);
-      const [activeTab, setActiveTab] = React.useState("all");
       const [formData, setFormData] = React.useState({
-        name: "",
-        email: "",
-        education: "",
-        skills: "",
-        ipfsHash: ""
+        name: "", email: "", education: "", skills: "", ipfsHash: ""
       });
 
+      // ✅ Connect MetaMask
       async function connectWallet() {
-        if (!window.ethereum) {
-          alert("Please install MetaMask!");
-          return;
+        try {
+          if (!window.ethereum) {
+            alert("Please install MetaMask!");
+            return;
+          }
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          await provider.send("eth_requestAccounts", []);
+          const signer = provider.getSigner();
+          const address = await signer.getAddress();
+          setAccount(address);
+
+          const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+          setContract(contractInstance);
+
+          console.log("Wallet Connected:", address);
+          alert("Wallet connected: " + address);
+          loadResumes(contractInstance);
+        } catch (err) {
+          alert("Connection failed: " + err.message);
         }
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const accounts = await provider.send("eth_requestAccounts", []);
-        const signer = provider.getSigner();
-        setAccount(accounts[0]);
-        const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        setContract(contractInstance);
-        loadResumes(contractInstance);
       }
 
+      // ✅ Load resumes from blockchain
       async function loadResumes(contractInstance) {
-        const data = await contractInstance.getAllResumes();
-        setResumes(data);
+        try {
+          const resumeIds = await contractInstance.getAllResumes();
+          const allResumes = [];
+          for (let id of resumeIds) {
+            const r = await contractInstance.getResume(id);
+            allResumes.push({ id: id.toString(), ...r });
+          }
+          setResumes(allResumes);
+        } catch (err) {
+          console.error("Error loading resumes:", err);
+        }
       }
 
+      // ✅ Submit new resume
       async function submitResume() {
-        const { name, email, education, skills, ipfsHash } = formData;
-        if (!contract) return alert("Connect wallet first!");
-        const tx = await contract.submitResume(
-          name,
-          email,
-          education,
-          skills.split(",").map(s => s.trim()),
-          ipfsHash
-        );
-        await tx.wait();
-        alert("Resume submitted successfully!");
-        loadResumes(contract);
+        try {
+          if (!contract) return alert("Connect wallet first!");
+          const { name, email, education, skills, ipfsHash } = formData;
+          const tx = await contract.submitResume(
+            name, email, education, skills.split(",").map(s => s.trim()), ipfsHash
+          );
+          await tx.wait();
+          alert("Resume submitted successfully!");
+          loadResumes(contract);
+        } catch (err) {
+          alert("Error submitting resume: " + err.message);
+        }
       }
 
+      // ✅ Verify / Unverify
       async function verifyResume(id) {
         const tx = await contract.verifyResume(id);
         await tx.wait();
@@ -566,31 +570,19 @@
           )}
 
           <h2>Submit Resume</h2>
-          <input type="text" placeholder="Full Name" onChange={e => setFormData({...formData, name: e.target.value})} />
-          <input type="email" placeholder="Email" onChange={e => setFormData({...formData, email: e.target.value})} />
-          <input type="text" placeholder="Education" onChange={e => setFormData({...formData, education: e.target.value})} />
-          <input type="text" placeholder="Skills (comma separated)" onChange={e => setFormData({...formData, skills: e.target.value})} />
-          <input type="text" placeholder="IPFS Hash" onChange={e => setFormData({...formData, ipfsHash: e.target.value})} />
+          <input type="text" placeholder="Full Name" onChange={e => setFormData({...formData, name: e.target.value})}/>
+          <input type="email" placeholder="Email" onChange={e => setFormData({...formData, email: e.target.value})}/>
+          <input type="text" placeholder="Education" onChange={e => setFormData({...formData, education: e.target.value})}/>
+          <input type="text" placeholder="Skills (comma separated)" onChange={e => setFormData({...formData, skills: e.target.value})}/>
+          <input type="text" placeholder="IPFS Hash" onChange={e => setFormData({...formData, ipfsHash: e.target.value})}/>
           <button onClick={submitResume}>Submit Resume</button>
 
-          <hr />
-
+          <hr/>
           <h2>Resume Records</h2>
-          <div className="tabs">
-            <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>All</button>
-            <button className={activeTab === 'verified' ? 'active' : ''} onClick={() => setActiveTab('verified')}>Verified</button>
-            <button className={activeTab === 'pending' ? 'active' : ''} onClick={() => setActiveTab('pending')}>Pending</button>
-          </div>
-
-          {resumes
-            .filter(r => 
-              activeTab === 'all' ||
-              (activeTab === 'verified' && r.isVerified) ||
-              (activeTab === 'pending' && !r.isVerified)
-            )
-            .map((resume, i) => (
+          {resumes.length === 0 && <p>No resumes found.</p>}
+          {resumes.map((resume, i) => (
             <div key={i} className="resume-item">
-              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+              <div style={{display:'flex',justifyContent:'space-between'}}>
                 <div>
                   <h3>{resume.name}</h3>
                   <p>{resume.email}</p>
@@ -603,7 +595,7 @@
               <div>
                 {resume.skills.map((s, idx) => <span key={idx} className="skill-tag">{s}</span>)}
               </div>
-              <div style={{marginTop: '10px'}}>
+              <div style={{marginTop:'10px'}}>
                 {resume.ipfsHash && (
                   <a href={`https://ipfs.io/ipfs/${resume.ipfsHash}`} target="_blank" rel="noopener noreferrer">
                     <button className="btn-primary">View on IPFS</button>
@@ -621,7 +613,7 @@
       );
     }
 
-    ReactDOM.render(<App />, document.getElementById('root'));
+    ReactDOM.render(<App />, document.getElementById("root"));
   </script>
 </body>
 </html>
