@@ -95,13 +95,256 @@
   </div>
 
   <script>
-    const CONTRACT_ADDRESS = "YOUR_DEPLOYED_CONTRACT_ADDRESS"; // <-- replace this
+    const CONTRACT_ADDRESS = "0xd9145CCE52D386f254917e481eB44e9943F39138"; // <-- replace this
     const ABI = [
-      "function admin() view returns (address)",
-      "function resumeCount() view returns (uint256)",
-      "function verifyResume(uint256 _resumeId) public",
-      "function getResume(uint256) view returns (string,string,string,string[],string,bool,address)"
-    ];
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "resumeId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "ResumeSubmitted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "resumeId",
+				"type": "uint256"
+			}
+		],
+		"name": "ResumeVerified",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_email",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_qualification",
+				"type": "string"
+			},
+			{
+				"internalType": "string[]",
+				"name": "_skills",
+				"type": "string[]"
+			},
+			{
+				"internalType": "string",
+				"name": "_experience",
+				"type": "string"
+			}
+		],
+		"name": "submitResume",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "fallback"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_resumeId",
+				"type": "uint256"
+			}
+		],
+		"name": "verifyResume",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getMyResumeIds",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_resumeId",
+				"type": "uint256"
+			}
+		],
+		"name": "getResume",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "email",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "qualification",
+				"type": "string"
+			},
+			{
+				"internalType": "string[]",
+				"name": "skills",
+				"type": "string[]"
+			},
+			{
+				"internalType": "string",
+				"name": "experience",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "verified",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "submittedBy",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "resumeCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "resumes",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "email",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "qualification",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "experience",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "verified",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "submittedBy",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "resumesByUser",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
 
     let provider, signer, contract, userAddress, adminAddress;
 
