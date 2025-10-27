@@ -1,122 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Decentralized Resume Verification</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f6f8fa;
+    * {
       margin: 0;
       padding: 0;
-      text-align: center;
+      box-sizing: border-box;
     }
 
-    header {
-      background-color: #0d1117;
-      color: white;
-      padding: 15px 0;
-      font-size: 22px;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
     }
 
     .container {
-      width: 90%;
-      max-width: 600px;
-      margin: 20px auto;
       background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    h2 {
+      color: #1e3a8a;
+      margin-bottom: 30px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
     }
 
     button {
-      background-color: #007bff;
-      color: white;
+      width: 100%;
+      padding: 14px 20px;
+      margin-top: 12px;
       border: none;
-      padding: 10px 15px;
-      border-radius: 8px;
-      cursor: pointer;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
       font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    button:hover {
-      background-color: #0056b3;
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     }
 
-    input, textarea {
-      width: 95%;
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #connectWalletBtn {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+
+    #connectWalletBtn.connected {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    #verifyBtn {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      display: none;
     }
 
     .status {
-      margin-top: 10px;
-      font-weight: bold;
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 10px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .status.connected { color: green; }
-    .status.error { color: red; }
-    .status.verified { color: blue; }
-
-    .resume-card {
-      background: #f0f0f0;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 8px;
-      text-align: left;
-    }
-
-    .top-bar {
+    .wallet-status {
+      background-color: #f3f4f6;
+      color: #6b7280;
       font-size: 14px;
-      background-color: #21262d;
-      color: #58a6ff;
-      padding: 5px;
+    }
+
+    .wallet-status.connected {
+      background-color: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .verification-status {
+      background-color: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .verification-status.verified {
+      background-color: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .verification-status.error {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .admin-badge {
+      display: inline-block;
+      background-color: #dbeafe;
+      color: #1e40af;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .file-input-wrapper {
+      margin-top: 24px;
+    }
+
+    .file-input-wrapper label {
+      display: block;
+      color: #374151;
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: border-color 0.3s ease;
+      cursor: pointer;
+    }
+
+    input[type="file"]:hover {
+      border-color: #2563eb;
+    }
+
+    input[type="file"]:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+
+    .note {
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #92400e;
+      line-height: 1.5;
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .spinner {
+      border: 2px solid #ffffff;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <header>🧾 Decentralized Resume Verification System</header>
-
-  <div class="top-bar">
-    <span id="networkInfo">🌐 Network: Not Connected</span> | 
-    <span id="walletInfo">💰 Wallet: Not Connected</span>
-  </div>
-
   <div class="container">
-    <h3>🔗 Connect Wallet</h3>
-    <button id="connectWalletBtn">Connect Wallet</button>
-    <p id="walletStatus" class="status">Not Connected</p>
+    <h2>Decentralized Resume Verification</h2>
 
-    <hr>
+    <button id="connectWalletBtn">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+      </svg>
+      <span id="connectBtnText">Connect Wallet</span>
+    </button>
 
-    <h3>📝 Submit Resume</h3>
-    <input type="text" id="name" placeholder="Name"><br>
-    <input type="email" id="email" placeholder="Email"><br>
-    <input type="text" id="qualification" placeholder="Qualification"><br>
-    <input type="text" id="skills" placeholder="Skills (comma separated)"><br>
-    <textarea id="experience" placeholder="Experience"></textarea><br>
-    <button id="submitResumeBtn">Submit Resume</button>
-    <p id="submissionStatus" class="status"></p>
+    <div id="walletStatus" class="status wallet-status">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span>Not connected</span>
+    </div>
 
-    <hr>
+    <div class="file-input-wrapper">
+      <label for="resumeFile">Upload Resume PDF</label>
+      <input type="file" id="resumeFile" accept=".pdf" />
+    </div>
 
-    <h3>📄 View My Resumes</h3>
-    <button id="viewMyResumesBtn">View Resumes</button>
-    <div id="resumeList"></div>
+    <div id="verificationStatus" class="status verification-status">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span>Not Verified</span>
+    </div>
 
-    <hr>
+    <button id="verifyBtn">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span>Verify Resume (Admin Only)</span>
+    </button>
 
-    <h3>✅ Admin Panel</h3>
-    <button id="verifyBtn" style="display:none;">Verify Resume</button>
-    <p id="verificationStatus" class="status"></p>
+    <div class="note">
+      <strong>Note:</strong> Update CONTRACT_ADDRESS in the script with your deployed contract address.
+    </div>
   </div>
 
   <script>
-    const CONTRACT_ADDRESS = "0xd9145CCE52D386f254917e481eB44e9943F39138"; // Replace this
+    const CONTRACT_ADDRESS = "0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8";
     const ABI = [
 	{
 		"inputs": [],
@@ -129,14 +251,26 @@
 			{
 				"indexed": true,
 				"internalType": "uint256",
-				"name": "resumeId",
+				"name": "id",
 				"type": "uint256"
 			},
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "user",
+				"name": "owner",
 				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
 			}
 		],
 		"name": "ResumeSubmitted",
@@ -148,7 +282,19 @@
 			{
 				"indexed": true,
 				"internalType": "uint256",
-				"name": "resumeId",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "verifier",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
 				"type": "uint256"
 			}
 		],
@@ -169,7 +315,7 @@
 			},
 			{
 				"internalType": "string",
-				"name": "_qualification",
+				"name": "_education",
 				"type": "string"
 			},
 			{
@@ -179,18 +325,46 @@
 			},
 			{
 				"internalType": "string",
-				"name": "_experience",
+				"name": "_ipfsHash",
 				"type": "string"
 			}
 		],
 		"name": "submitResume",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_newAdmin",
+				"type": "address"
+			}
+		],
+		"name": "transferAdmin",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"stateMutability": "payable",
-		"type": "fallback"
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_resumeId",
+				"type": "uint256"
+			}
+		],
+		"name": "unverifyResume",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"inputs": [
@@ -204,10 +378,6 @@
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
-	},
-	{
-		"stateMutability": "payable",
-		"type": "receive"
 	},
 	{
 		"inputs": [],
@@ -224,7 +394,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "getMyResumeIds",
+		"name": "getAllResumes",
 		"outputs": [
 			{
 				"internalType": "uint256[]",
@@ -257,7 +427,7 @@
 			},
 			{
 				"internalType": "string",
-				"name": "qualification",
+				"name": "education",
 				"type": "string"
 			},
 			{
@@ -267,18 +437,106 @@
 			},
 			{
 				"internalType": "string",
-				"name": "experience",
+				"name": "ipfsHash",
 				"type": "string"
 			},
 			{
 				"internalType": "bool",
-				"name": "verified",
+				"name": "isVerified",
 				"type": "bool"
 			},
 			{
 				"internalType": "address",
-				"name": "submittedBy",
+				"name": "owner",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_resumeId",
+				"type": "uint256"
+			}
+		],
+		"name": "getResumeOwner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getUnverifiedResumes",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_user",
+				"type": "address"
+			}
+		],
+		"name": "getUserResumes",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getVerifiedResumes",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_resumeId",
+				"type": "uint256"
+			}
+		],
+		"name": "isResumeVerified",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -308,6 +566,11 @@
 		"name": "resumes",
 		"outputs": [
 			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
 				"internalType": "string",
 				"name": "name",
 				"type": "string"
@@ -319,23 +582,28 @@
 			},
 			{
 				"internalType": "string",
-				"name": "qualification",
+				"name": "education",
 				"type": "string"
 			},
 			{
 				"internalType": "string",
-				"name": "experience",
+				"name": "ipfsHash",
 				"type": "string"
 			},
 			{
 				"internalType": "bool",
-				"name": "verified",
+				"name": "isVerified",
 				"type": "bool"
 			},
 			{
 				"internalType": "address",
-				"name": "submittedBy",
+				"name": "owner",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -354,7 +622,7 @@
 				"type": "uint256"
 			}
 		],
-		"name": "resumesByUser",
+		"name": "userResumes",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -368,122 +636,157 @@
 ];
 
     let provider, signer, contract, userAddress, adminAddress;
+    let isConnecting = false;
+    let isVerifying = false;
 
     async function connectWallet() {
-      const walletStatus = document.getElementById("walletStatus");
+      if (isConnecting) return;
+
       try {
+        isConnecting = true;
+        const connectBtn = document.getElementById("connectWalletBtn");
+        const connectBtnText = document.getElementById("connectBtnText");
+        const walletStatus = document.getElementById("walletStatus");
+
         if (!window.ethereum) {
-          alert("⚠️ MetaMask not found! Please install it.");
-          window.open("https://metamask.io/download.html");
+          alert("MetaMask is not installed. Please install MetaMask to use this app.");
+          isConnecting = false;
           return;
         }
 
-        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-        userAddress = accounts[0];
+        connectBtnText.innerHTML = '<div class="spinner"></div> Connecting...';
+        connectBtn.disabled = true;
+
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts"
+        });
 
         provider = new ethers.providers.Web3Provider(window.ethereum);
         signer = provider.getSigner();
-        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-        adminAddress = await contract.admin();
+        userAddress = await signer.getAddress();
 
-        const network = await provider.getNetwork();
-        document.getElementById("networkInfo").innerText = `🌐 Network: ${network.name}`;
-        document.getElementById("walletInfo").innerText = `💰 Wallet: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+        connectBtnText.textContent = "Wallet Connected";
+        connectBtn.classList.add("connected");
+        connectBtn.disabled = true;
 
-        walletStatus.innerText = "✅ Connected: " + userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-        walletStatus.className = "status connected";
+        walletStatus.innerHTML = `
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <div>Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}</div>
+          </div>
+        `;
+        walletStatus.classList.add("connected");
 
-        if (userAddress.toLowerCase() === adminAddress.toLowerCase()) {
-          document.getElementById("verifyBtn").style.display = "block";
-        } else {
-          document.getElementById("verifyBtn").style.display = "none";
+        if (CONTRACT_ADDRESS !== "YOUR_DEPLOYED_CONTRACT_ADDRESS") {
+          contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+          adminAddress = await contract.admin();
+
+          if (userAddress.toLowerCase() === adminAddress.toLowerCase()) {
+            walletStatus.innerHTML += '<div class="admin-badge">Admin Access</div>';
+            document.getElementById("verifyBtn").style.display = "flex";
+          }
         }
 
-      } catch (err) {
-        console.error("Wallet connection error:", err);
-        walletStatus.innerText = "❌ Connection failed";
-        walletStatus.className = "status error";
-      }
-    }
-
-    async function submitResume() {
-      try {
-        const name = document.getElementById("name").value;
-        const email = document.getElementById("email").value;
-        const qualification = document.getElementById("qualification").value;
-        const skills = document.getElementById("skills").value.split(",");
-        const experience = document.getElementById("experience").value;
-        const status = document.getElementById("submissionStatus");
-
-        if (!contract) {
-          alert("⚠️ Please connect your wallet first!");
-          return;
-        }
-
-        const tx = await contract.submitResume(name, email, qualification, skills, experience);
-        await tx.wait();
-
-        status.innerText = "✅ Resume submitted successfully!";
-        status.className = "status connected";
-      } catch (err) {
-        console.error("Submit error:", err);
-        document.getElementById("submissionStatus").innerText = "❌ Submission failed.";
-      }
-    }
-
-    async function viewMyResumes() {
-      const resumeList = document.getElementById("resumeList");
-      resumeList.innerHTML = "";
-      try {
-        if (!contract) {
-          alert("⚠️ Connect wallet first!");
-          return;
-        }
-        const ids = await contract.getMyResumeIds();
-        for (let id of ids) {
-          const r = await contract.getResume(id);
-          const card = document.createElement("div");
-          card.className = "resume-card";
-          card.innerHTML = `
-            <strong>ID:</strong> ${id}<br>
-            <strong>Name:</strong> ${r[0]}<br>
-            <strong>Email:</strong> ${r[1]}<br>
-            <strong>Qualification:</strong> ${r[2]}<br>
-            <strong>Skills:</strong> ${r[3].join(", ")}<br>
-            <strong>Experience:</strong> ${r[4]}<br>
-            <strong>Verified:</strong> ${r[5] ? "✅ Yes" : "❌ No"}<br>
-          `;
-          resumeList.appendChild(card);
-        }
-      } catch (err) {
-        console.error("View error:", err);
-        resumeList.innerText = "Error fetching resumes.";
+        isConnecting = false;
+      } catch (error) {
+        console.error("Error connecting wallet:", error);
+        alert("Failed to connect wallet: " + error.message);
+        document.getElementById("connectBtnText").textContent = "Connect Wallet";
+        document.getElementById("connectWalletBtn").disabled = false;
+        isConnecting = false;
       }
     }
 
     async function verifyResume() {
+      if (isVerifying) return;
+
+      if (!contract) {
+        alert("Please connect your wallet and ensure contract is deployed.");
+        return;
+      }
+
+      const resumeId = prompt("Enter Resume ID to verify:");
+      if (!resumeId) return;
+
       try {
-        if (!contract) {
-          alert("⚠️ Connect wallet first!");
-          return;
-        }
-        const resumeId = prompt("Enter Resume ID to verify:");
-        if (!resumeId) return;
+        isVerifying = true;
+        const verifyBtn = document.getElementById("verifyBtn");
+        const verificationStatus = document.getElementById("verificationStatus");
+
+        verifyBtn.disabled = true;
+        verifyBtn.querySelector("span").textContent = "Verifying...";
+
+        verificationStatus.innerHTML = `
+          <div class="spinner"></div>
+          <span>Verifying transaction...</span>
+        `;
+        verificationStatus.className = "status verification-status";
+
         const tx = await contract.verifyResume(resumeId);
         await tx.wait();
 
-        document.getElementById("verificationStatus").innerText = "✅ Verified Successfully";
-        document.getElementById("verificationStatus").className = "status verified";
-      } catch (err) {
-        console.error("Verification error:", err);
-        document.getElementById("verificationStatus").innerText = "❌ Error verifying resume";
+        verificationStatus.innerHTML = `
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Resume Verified Successfully</span>
+        `;
+        verificationStatus.classList.add("verified");
+
+        verifyBtn.disabled = false;
+        verifyBtn.querySelector("span").textContent = "Verify Resume (Admin Only)";
+        isVerifying = false;
+      } catch (error) {
+        console.error("Error verifying resume:", error);
+        const verificationStatus = document.getElementById("verificationStatus");
+        verificationStatus.innerHTML = `
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span>Error: ${error.message || "Failed to verify resume"}</span>
+        `;
+        verificationStatus.classList.add("error");
+
+        document.getElementById("verifyBtn").disabled = false;
+        document.getElementById("verifyBtn").querySelector("span").textContent = "Verify Resume (Admin Only)";
+        isVerifying = false;
+      }
+    }
+
+    async function checkWalletConnection() {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_accounts" });
+          if (accounts.length > 0) {
+            await connectWallet();
+          }
+        } catch (error) {
+          console.error("Error checking wallet connection:", error);
+        }
       }
     }
 
     document.getElementById("connectWalletBtn").addEventListener("click", connectWallet);
-    document.getElementById("submitResumeBtn").addEventListener("click", submitResume);
-    document.getElementById("viewMyResumesBtn").addEventListener("click", viewMyResumes);
     document.getElementById("verifyBtn").addEventListener("click", verifyResume);
+
+    window.addEventListener("load", checkWalletConnection);
+
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", (accounts) => {
+        if (accounts.length === 0) {
+          location.reload();
+        } else {
+          location.reload();
+        }
+      });
+
+      window.ethereum.on("chainChanged", () => {
+        location.reload();
+      });
+    }
   </script>
 </body>
 </html>
+
