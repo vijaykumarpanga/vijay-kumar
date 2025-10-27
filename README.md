@@ -1,99 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Decentralized Resume Verification</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decentralized Resume Verification</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #e5f0ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      width: 380px;
+      text-align: center;
+    }
+    h2 {
+      color: #1e3a8a;
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #connectWalletBtn {
+      background-color: #2563eb;
+    }
+    #verifyBtn {
+      background-color: #16a34a;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .connected {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .not-verified {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+    .verified {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+    .small-text {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Decentralized Resume Verification</h1>
-    
-    <h2>Submit Resume</h2>
-    <form id="resumeForm">
-        <label>Name: <input type="text" id="name" required /></label><br>
-        <label>Email: <input type="email" id="email" required /></label><br>
-        <label>Qualification: <input type="text" id="qualification" required /></label><br>
-        <label>Skills (comma separated): <input type="text" id="skills" required /></label><br>
-        <label>Experience: <input type="text" id="experience" required /></label><br>
-        <button type="submit">Submit Resume</button>
+  <div class="container">
+    <h2>Decentralized Resume Verification</h2>
+
+    <button id="connectWalletBtn">Connect Wallet</button>
+    <div id="walletStatus" class="status small-text">Not connected</div>
+
+    <form id="uploadForm">
+      <label for="resumeFile">Upload Resume PDF</label><br>
+      <input type="file" id="resumeFile" accept=".pdf" />
     </form>
-    <hr>
-    <h2>Verify Resume (Admin Only)</h2>
-    <form id="verifyForm">
-        <label>Resume ID: <input type="number" id="resumeId" required /></label>
-        <button type="submit">Verify Resume</button>
-    </form>
-    <hr>
-    <h2>Get Resume By ID</h2>
-    <form id="getForm">
-        <label>Resume ID: <input type="number" id="getId" required /></label>
-        <button type="submit">Get Resume</button>
-    </form>
-    <pre id="result"></pre>
 
-    <script>
-        // Replace with your deployed contract address and ABI
-        const contractAddress = 'YOUR_CONTRACT_ADDRESS';
-        const contractABI = [
-            // ABI snippets for used functions only
-            "function submitResume(string,string,string,string[],string) public",
-            "function verifyResume(uint) public",
-            "function getResume(uint) public view returns (string,string,string,string[],string,bool,address)"
-        ];
+    <div id="verificationStatus" class="status not-verified">
+      ❌ Not Verified
+    </div>
 
-        let provider, signer, contract;
+    <button id="verifyBtn">✅ Verify Resume (Admin Only)</button>
+  </div>
 
-        async function init() {
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = provider.getSigner();
-            contract = new ethers.Contract(contractAddress, contractABI, signer);
-        }
+  <script>
+    const CONTRACT_ADDRESS = "YOUR_DEPLOYED_CONTRACT_ADDRESS"; // <-- replace this
+    const ABI = [
+      "function admin() view returns (address)",
+      "function resumeCount() view returns (uint256)",
+      "function verifyResume(uint256 _resumeId) public",
+      "function getResume(uint256) view returns (string,string,string,string[],string,bool,address)"
+    ];
 
-        document.getElementById('resumeForm').onsubmit = async function(e) {
-            e.preventDefault();
-            await init();
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const qualification = document.getElementById('qualification').value;
-            const skills = document.getElementById('skills').value.split(",");
-            const experience = document.getElementById('experience').value;
-            try {
-                const tx = await contract.submitResume(name, email, qualification, skills, experience);
-                await tx.wait();
-                document.getElementById('result').innerText = "Resume submitted successfully!";
-            } catch (err) {
-                document.getElementById('result').innerText = err.message;
-            }
-        };
+    let provider, signer, contract, userAddress, adminAddress;
 
-        document.getElementById('verifyForm').onsubmit = async function(e) {
-            e.preventDefault();
-            await init();
-            const resumeId = document.getElementById('resumeId').value;
-            try {
-                const tx = await contract.verifyResume(resumeId);
-                await tx.wait();
-                document.getElementById('result').innerText = "Resume verified!";
-            } catch (err) {
-                document.getElementById('result').innerText = err.message;
-            }
-        };
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("MetaMask not detected!");
+        return;
+      }
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      userAddress = await signer.getAddress();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      adminAddress = await contract.admin();
 
-        document.getElementById('getForm').onsubmit = async function(e) {
-            e.preventDefault();
-            await init();
-            const getId = document.getElementById('getId').value;
-            try {
-                const resume = await contract.getResume(getId);
-                document.getElementById('result').innerText =
-                    "Name: " + resume[0] + "\nEmail: " + resume[1] +
-                    "\nQualification: " + resume[2] + "\nSkills: " + resume[3].join(", ") +
-                    "\nExperience: " + resume[4] + "\nVerified: " + resume[5] +
-                    "\nSubmitted By: " + resume[6];
-            } catch (err) {
-                document.getElementById('result').innerText = err.message;
-            }
-        };
-    </script>
+      document.getElementById("walletStatus").innerText = "✅ Wallet Connected: " + userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+      document.getElementById("walletStatus").className = "status connected";
+
+      if (userAddress.toLowerCase() === adminAddress.toLowerCase()) {
+        document.getElementById("verifyBtn").style.display = "block";
+      } else {
+        document.getElementById("verifyBtn").style.display = "none";
+      }
+    }
+
+    async function verifyResume() {
+      try {
+        const resumeId = prompt("Enter Resume ID to verify:");
+        if (!resumeId) return;
+
+        const tx = await contract.verifyResume(resumeId);
+        await tx.wait();
+
+        document.getElementById("verificationStatus").innerText = "✅ Verified Successfully";
+        document.getElementById("verificationStatus").className = "status verified";
+      } catch (err) {
+        console.error(err);
+        document.getElementById("verificationStatus").innerText = "❌ Error verifying resume";
+        document.getElementById("verificationStatus").className = "status error";
+      }
+    }
+
+    document.getElementById("connectWalletBtn").addEventListener("click", connectWallet);
+    document.getElementById("verifyBtn").addEventListener("click", verifyResume);
+  </script>
 </body>
 </html>
